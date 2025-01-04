@@ -1,1 +1,3 @@
-/model/
+# 忽略所有以.model开头的文件夹
+/model*/
+/logs/
