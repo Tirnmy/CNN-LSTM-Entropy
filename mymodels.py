@@ -1,5 +1,6 @@
 import torch
 from torch import nn
+import torch.nn.functional as F
 
 
 class TimeSeriesCNN(nn.Module):
@@ -34,6 +35,53 @@ class TimeSeriesCNN(nn.Module):
         # 直接将输入传递给定义好的Sequential模型
         x = torch.reshape(x, (x.size(0), 7, 70))
         x = self.model(x)
+        return x
+
+
+class CNNEntropy(nn.Module):
+    def __init__(self, input_channels=7, num_classes=2):
+        super(CNNEntropy, self).__init__()
+        # 使用nn.Sequential定义模型
+        self.model = nn.Sequential(
+            # 第一层卷积，in_channels=7（特征数），out_channels=16（输出通道数）
+            nn.Conv1d(in_channels=input_channels, out_channels=16, kernel_size=3, stride=1, padding=1),
+            nn.ReLU(),
+            nn.MaxPool1d(kernel_size=2, stride=2, padding=1),
+            # 16*36
+            # 第二层卷积，使用上一次池化后的输出通道数作为输入通道数
+            nn.Conv1d(in_channels=16, out_channels=32, kernel_size=3, stride=1, padding=1),
+            nn.ReLU(),
+            nn.MaxPool1d(kernel_size=2, stride=2, padding=1),
+            # 32*19
+            # 展平层，准备输入到全连接层
+            nn.Flatten(),
+            # 全连接层，输入特征数需要根据展平后的维度计算
+            nn.Linear(32 * 19, 64),  # 根据池化层后的尺寸调整
+            nn.ReLU(),
+            nn.Linear(64, 32),
+            nn.ReLU(),
+            nn.Linear(32, 16),
+            nn.ReLU()
+        )
+
+        self.model2 = nn.Sequential(
+            nn.Linear(16 + 7 + 7, 64),
+            nn.ReLU(),
+            nn.Linear(64, 32),
+            nn.ReLU(),
+            nn.Linear(32, 16),
+            nn.ReLU(),
+            nn.Linear(16, num_classes)
+        )
+
+    def forward(self, x, e1, e2):
+        # 直接将输入传递给定义好的Sequential模型
+        x = torch.reshape(x, (x.size(0), 7, 70))
+        x = self.model(x)
+        e1 = torch.flatten(e1, start_dim=1)
+        e2 = torch.flatten(e2, start_dim=1)
+        combined = torch.cat((x, e1, e2), dim=1)
+        x = self.model2(combined)
         return x
 
 
@@ -84,10 +132,16 @@ class CNNAE(nn.Module):
 
 
 if __name__ == '__main__':
-    model = TimeSeriesCNN()
-    inputs = torch.randn(1, 70, 7)
-    outputs = model(inputs)
-    print('inputs', inputs)
-    print(inputs.shape)
+    model = CNNEntropy()
+    x = torch.randn(1, 70, 7)
+    e1 = torch.randn(1, 1, 7)
+    e2 = torch.randn(1, 1, 7)
+    outputs = model(x, e1, e2)
+    print('x', x)
+    print(x.shape)
+    print('e1', e1)
+    print(e1.shape)
+    print('e2', e2)
+    print(e2.shape)
     print('outputs', outputs)
     print(outputs.shape)

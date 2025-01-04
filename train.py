@@ -35,13 +35,17 @@ class CountDataset(Dataset):
 
 
 class EntropyDataset(Dataset):
-    def __init__(self, data_dir, label_path):
-        self.data_dir = data_dir
+    def __init__(self, data_dir, label_path, e_weekend_dir, e_workday_dir):
+        self.data_dir = data_dir  # count目录路径
         self.label_path = label_path
+        self.e_weekend_dir = e_weekend_dir  # entropy-weekend 目录路径
+        self.e_workday_dir = e_workday_dir  # entropy-workday 目录路径
         self.df_label = pd.read_csv(self.label_path)
         f_lst = os.listdir(data_dir)
         self.id_lst = [int(f.rstrip('.csv')) for f in f_lst]
-        self.fpath_lst = [os.path.join(data_dir, file) for file in f_lst]
+        self.fpath_lst = [os.path.join(data_dir, f) for f in f_lst]  # count下文件相对路径列表
+        self.wknd_lst = [os.path.join(e_weekend_dir, f) for f in os.listdir(e_weekend_dir)]  # entropy-weekend下文件相对路径列表
+        self.wkdy_lst = [os.path.join(e_workday_dir, f) for f in os.listdir(e_workday_dir)]  # entropy-workday下文件相对路径列表
 
     def __len__(self):
         return len(self.id_lst)
@@ -49,10 +53,20 @@ class EntropyDataset(Dataset):
     def __getitem__(self, idx):
         fpath = self.fpath_lst[idx]
         df_data = pd.read_csv(fpath)
-        np_array = df_data.to_numpy()
-        data = torch.from_numpy(np_array).float()
+
+        wknd_path = self.wknd_lst[idx]
+        df_wknd = pd.read_csv(wknd_path)
+        wkdy_path = self.wkdy_lst[idx]
+        df_wkdy = pd.read_csv(wkdy_path)
+
+        data_np_array = df_data.to_numpy()
+        data = torch.from_numpy(data_np_array).float()
+        wknd_np_array = df_wknd.to_numpy()
+        wknd = torch.from_numpy(wknd_np_array).float()
+        wkdy_np_array = df_wkdy.to_numpy()
+        wkdy = torch.from_numpy(wkdy_np_array).float()
         label = self.df_label.loc[self.df_label['enrollment_id'] == self.id_lst[idx], 'truth'].values[0]
-        return data, label
+        return data, wknd, wkdy, label
 
 
 
@@ -86,7 +100,7 @@ if __name__ == '__main__':
     loss_fn = loss_fn.to(device)
 
     learning = 0.001
-    optimizer = torch.optim.SGD(model.parameters(), lr=learning)
+    optimizer = torch.optim.Adam(model.parameters(), lr=learning)
 
     # 记录训练的次数
     total_train_step = 0
@@ -94,7 +108,7 @@ if __name__ == '__main__':
     total_test_step = 0
 
     # 训练的轮次
-    epoch = 100
+    epoch = 50
 
     start_time = time.time()
 
