@@ -30,9 +30,9 @@ y_pred = []
 
 # 测试模型
 with torch.no_grad():
-    for inputs, labels in test_dataloader:
-        inputs, labels = inputs.to(device), labels.to(device)
-        outputs = model(inputs)
+    for inputs, wknd, wkdy, labels in test_dataloader:
+        inputs, wknd, wkdy, labels = inputs.to(device), wknd.to(device), wkdy.to(device), labels.to(device)
+        outputs = model(inputs, wknd, wkdy)
         _, predicted = torch.max(outputs, 1)
         y_true.extend(labels.cpu().numpy())
         y_scores.extend(outputs[:, 1].cpu().numpy())  # 只取正类概率

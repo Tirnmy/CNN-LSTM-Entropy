@@ -73,17 +73,19 @@ class EntropyDataset(Dataset):
 
 
 if __name__ == '__main__':
-    model = CNNLSTM().to(device)
+    model = CNNLSTMEntropy().to(device)
 
     # 添加 tensorboard
-    name = "CNNLSTM"
+    name = "CNNLSTMEntropy"
     writer_summary_path = os.path.join('./logs', name)
     current_time = time.strftime("%Y%m%d-%H%M%S", time.localtime())
     log_dir = os.path.join(writer_summary_path, current_time)
     writer = SummaryWriter(log_dir=log_dir, comment=name)
 
-    train_data = CountDataset(data_dir='./data/train/count', label_path='./data/train/truth/train_truth.csv')
-    test_data = CountDataset(data_dir='./data/test/count', label_path='./data/test/truth/test_truth.csv')
+    train_data = EntropyDataset(data_dir='./data/train/count', label_path='./data/train/truth/train_truth.csv', 
+                                e_weekend_dir='./data/train/entropy-weekend', e_workday_dir='./data/train/entropy-workday')
+    test_data = EntropyDataset(data_dir='./data/test/count', label_path='./data/test/truth/test_truth.csv', 
+                               e_weekend_dir='./data/test/entropy-weekend', e_workday_dir='./data/test/entropy-workday')
 
     # length 长度
     train_data_size = len(train_data)
@@ -115,38 +117,42 @@ if __name__ == '__main__':
     for i in range(epoch):
         print("-----第 {} 轮训练开始-----".format(i + 1))
 
-        # 训练步骤开始
+        # 训练
         model.train()  # 当网络中有dropout层、batchnorm层时，这些层能起作用
         for data in train_dataloader:
-            inputs, targets = data
-            inputs = inputs.to(device)
+            x, wknd, wkdy, targets = data
+            x = x.to(device)
+            wknd = wknd.to(device)
+            wkdy = wkdy.to(device)
             targets = targets.to(device)
-            outputs = model(inputs)
+            outputs = model(x, wknd, wkdy)
             loss = loss_fn(outputs, targets)  # 计算实际输出与目标输出的差距
 
-            # 优化器对模型调优
+            # 优化器
             optimizer.zero_grad()  # 梯度清零
-            loss.backward()  # 反向传播，计算损失函数的梯度
-            optimizer.step()  # 根据梯度，对网络的参数进行调优
+            loss.backward()  # 反向传播
+            optimizer.step()  # 梯度
 
             total_train_step = total_train_step + 1
             if total_train_step % 100 == 0:
                 end_time = time.time()
                 print(end_time - start_time)  # 运行训练一百次后的时间间隔
-                print("训练次数：{}，Loss：{}".format(total_train_step, loss.item()))  # 方式二：获得loss值
+                print("训练次数：{}，Loss：{}".format(total_train_step, loss.item()))  # 获得loss值
                 writer.add_scalar("train_loss", loss.item(), total_train_step)
 
-        # 测试步骤开始
-        model.eval()  # 当网络中有dropout层、batchnorm层时，这些层不能起作用
+        # 测试
+        model.eval()
         total_test_loss = 0
         total_accuracy = 0
         with torch.no_grad():
-            for data in test_dataloader:  # 测试数据集提取数据
-                inputs, targets = data  # 数据放到cuda上
-                inputs = inputs.to(device)
+            for data in test_dataloader:  # 测试数据集
+                x, wknd, wkdy, targets = data
+                x = x.to(device)
+                wknd = wknd.to(device)
+                wkdy = wkdy.to(device)
                 targets = targets.to(device)
-                outputs = model(inputs)
-                loss = loss_fn(outputs, targets)  # 仅data数据在网络模型上的损失
+                outputs = model(x, wknd, wkdy)
+                loss = loss_fn(outputs, targets)
                 total_test_loss = total_test_loss + loss.item()  # 所有loss
                 accuracy = (outputs.argmax(1) == targets).sum()
                 total_accuracy = total_accuracy + accuracy
@@ -157,11 +163,11 @@ if __name__ == '__main__':
         writer.add_scalar("test_accuracy", total_accuracy / test_data_size, total_test_step)
         total_test_step = total_test_step + 1
 
-        # torch.save(model, "./model/model_{}.pth".format(i))  # 保存每一轮训练后的结果
+        # torch.save(model, "./model/model_{}.pth".format(i))
         model_dir = f"./model{name}"
         if not os.path.exists(model_dir):
             os.makedirs(model_dir)
-        torch.save(model.state_dict(),f"{model_dir}/model_{i}") # 保存方式二
+        torch.save(model.state_dict(),f"{model_dir}/model_{i}")
         print("模型已保存")
 
     writer.close()
