@@ -5,7 +5,7 @@ import torch
 from sklearn.metrics import roc_auc_score, f1_score, precision_score, recall_score, accuracy_score
 from torch.utils.data import DataLoader, Dataset
 from train import CountDataset
-from mymodels import TimeSeriesCNN
+from mymodels import *
 
 # 参数设置
 device = torch.device("cuda")
@@ -17,8 +17,8 @@ test_dataloader = DataLoader(test_data, batch_size=64)
 # 加载模型
 # f_lst = os.listdir('./modelTimeSeriesCNN')
 # for f in f_lst:
-f = "./modelTimeSeriesCNN/model_6"
-model = TimeSeriesCNN()  # 导入网络结构
+f = "./modelCNNLSTM/model_15"
+model = CNNLSTM()  # 导入网络结构
 model.load_state_dict(torch.load(f, weights_only=False))  # 导入网络的参数
 model = model.to(device)
 model.eval()
