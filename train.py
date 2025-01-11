@@ -10,7 +10,7 @@ from torch.utils.tensorboard import SummaryWriter
 
 from mymodels import *
 
-device = torch.device("cuda")
+device = torch.device("cuda:0")
 
 
 class CountDataset(Dataset):
@@ -73,10 +73,10 @@ class EntropyDataset(Dataset):
 
 
 if __name__ == '__main__':
-    model = CNNLSTM().to(device)
+    model = SimpleCNN().to(device)
 
     # 添加 tensorboard
-    name = "CNNLSTM"
+    name = "SimpleCNN"
     writer_summary_path = os.path.join('./logs', name)
     current_time = time.strftime("%Y%m%d-%H%M%S", time.localtime())
     log_dir = os.path.join(writer_summary_path, current_time)
@@ -99,6 +99,7 @@ if __name__ == '__main__':
     loss_fn = nn.CrossEntropyLoss()
     loss_fn = loss_fn.to(device)
 
+    # 学习率
     learning = 0.001
     optimizer = torch.optim.Adam(model.parameters(), lr=learning)
 
@@ -116,28 +117,28 @@ if __name__ == '__main__':
         print("-----第 {} 轮训练开始-----".format(i + 1))
 
         # 训练步骤开始
-        model.train()  # 当网络中有dropout层、batchnorm层时，这些层能起作用
+        model.train()  # 当网络中有dropout层、batchnorm层时能起作用
         for data in train_dataloader:
             inputs, targets = data
             inputs = inputs.to(device)
             targets = targets.to(device)
             outputs = model(inputs)
-            loss = loss_fn(outputs, targets)  # 计算实际输出与目标输出的差距
+            loss = loss_fn(outputs, targets)
 
             # 优化器对模型调优
             optimizer.zero_grad()  # 梯度清零
-            loss.backward()  # 反向传播，计算损失函数的梯度
-            optimizer.step()  # 根据梯度，对网络的参数进行调优
+            loss.backward()  # 反向传播
+            optimizer.step()  # 梯度
 
             total_train_step = total_train_step + 1
             if total_train_step % 100 == 0:
                 end_time = time.time()
                 print(end_time - start_time)  # 运行训练一百次后的时间间隔
-                print("训练次数：{}，Loss：{}".format(total_train_step, loss.item()))  # 方式二：获得loss值
+                print("训练次数：{}，Loss：{}".format(total_train_step, loss.item()))
                 writer.add_scalar("train_loss", loss.item(), total_train_step)
 
         # 测试步骤开始
-        model.eval()  # 当网络中有dropout层、batchnorm层时，这些层不能起作用
+        model.eval()  # dropout层、batchnormal，这些层不能起作用
         total_test_loss = 0
         total_accuracy = 0
         with torch.no_grad():
@@ -157,11 +158,11 @@ if __name__ == '__main__':
         writer.add_scalar("test_accuracy", total_accuracy / test_data_size, total_test_step)
         total_test_step = total_test_step + 1
 
-        # torch.save(model, "./model/model_{}.pth".format(i))  # 保存每一轮训练后的结果
         model_dir = f"./model{name}"
         if not os.path.exists(model_dir):
             os.makedirs(model_dir)
-        torch.save(model.state_dict(),f"{model_dir}/model_{i}") # 保存方式二
+        torch.save(model, f"./{model_dir}/model_{i}.pth")  # 保存每一轮训练后的结果
+        # torch.save(model.state_dict(),f"{model_dir}/model_{i}.pth") # 保存方式二
         print("模型已保存")
 
     writer.close()

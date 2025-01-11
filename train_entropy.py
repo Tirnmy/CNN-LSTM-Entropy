@@ -10,7 +10,7 @@ from torch.utils.tensorboard import SummaryWriter
 
 from mymodels import *
 
-device = torch.device("cuda")
+device = torch.device("cuda:0")
 
 
 class CountDataset(Dataset):
@@ -82,9 +82,11 @@ if __name__ == '__main__':
     log_dir = os.path.join(writer_summary_path, current_time)
     writer = SummaryWriter(log_dir=log_dir, comment=name)
 
-    train_data = EntropyDataset(data_dir='./data/train/count', label_path='./data/train/truth/train_truth.csv', 
+    # train_data = CountDataset(data_dir='./data/train/count', label_path='./data/train/truth/train_truth.csv')
+    # test_data = CountDataset(data_dir='./data/test/count', label_path='./data/test/truth/test_truth.csv')
+    train_data = EntropyDataset(data_dir='./data/train/count', label_path='./data/train/truth/train_truth.csv',
                                 e_weekend_dir='./data/train/entropy-weekend', e_workday_dir='./data/train/entropy-workday')
-    test_data = EntropyDataset(data_dir='./data/test/count', label_path='./data/test/truth/test_truth.csv', 
+    test_data = EntropyDataset(data_dir='./data/test/count', label_path='./data/test/truth/test_truth.csv',
                                e_weekend_dir='./data/test/entropy-weekend', e_workday_dir='./data/test/entropy-workday')
 
     # length 长度
@@ -101,7 +103,8 @@ if __name__ == '__main__':
     loss_fn = nn.CrossEntropyLoss()
     loss_fn = loss_fn.to(device)
 
-    learning = 0.001
+    # 学习率，优化器
+    learning = 0.0025
     optimizer = torch.optim.Adam(model.parameters(), lr=learning)
 
     # 记录训练的次数
@@ -118,7 +121,7 @@ if __name__ == '__main__':
         print("-----第 {} 轮训练开始-----".format(i + 1))
 
         # 训练
-        model.train()  # 当网络中有dropout层、batchnorm层时，这些层能起作用
+        model.train()  # 当网络中有dropout层、batchnorm层时能起作用
         for data in train_dataloader:
             x, wknd, wkdy, targets = data
             x = x.to(device)
@@ -126,7 +129,7 @@ if __name__ == '__main__':
             wkdy = wkdy.to(device)
             targets = targets.to(device)
             outputs = model(x, wknd, wkdy)
-            loss = loss_fn(outputs, targets)  # 计算实际输出与目标输出的差距
+            loss = loss_fn(outputs, targets)
 
             # 优化器
             optimizer.zero_grad()  # 梯度清零
@@ -167,7 +170,7 @@ if __name__ == '__main__':
         model_dir = f"./model{name}"
         if not os.path.exists(model_dir):
             os.makedirs(model_dir)
-        torch.save(model.state_dict(),f"{model_dir}/model_{i}")
+        torch.save(model.state_dict(),f"{model_dir}/model_{i}.pth")
         print("模型已保存")
 
     writer.close()
