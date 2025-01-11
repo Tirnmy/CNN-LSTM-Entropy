@@ -73,10 +73,10 @@ class EntropyDataset(Dataset):
 
 
 if __name__ == '__main__':
-    model = SimpleCNN().to(device)
+    model = CLSA().to(device)
 
     # 添加 tensorboard
-    name = "SimpleCNN"
+    name = "CLSA"
     writer_summary_path = os.path.join('./logs', name)
     current_time = time.strftime("%Y%m%d-%H%M%S", time.localtime())
     log_dir = os.path.join(writer_summary_path, current_time)
