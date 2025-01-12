@@ -73,10 +73,10 @@ class EntropyDataset(Dataset):
 
 
 if __name__ == '__main__':
-    model = CNNLSTMEntropy().to(device)
+    model = CLSAEntropy().to(device)
 
     # 添加 tensorboard
-    name = "CNNLSTMEntropy"
+    name = "CLSAEntropy"
     writer_summary_path = os.path.join('./logs', name)
     current_time = time.strftime("%Y%m%d-%H%M%S", time.localtime())
     log_dir = os.path.join(writer_summary_path, current_time)
@@ -104,7 +104,7 @@ if __name__ == '__main__':
     loss_fn = loss_fn.to(device)
 
     # 学习率，优化器
-    learning = 0.0025
+    learning = 0.001
     optimizer = torch.optim.Adam(model.parameters(), lr=learning)
 
     # 记录训练的次数
@@ -166,11 +166,10 @@ if __name__ == '__main__':
         writer.add_scalar("test_accuracy", total_accuracy / test_data_size, total_test_step)
         total_test_step = total_test_step + 1
 
-        # torch.save(model, "./model/model_{}.pth".format(i))
         model_dir = f"./model{name}"
         if not os.path.exists(model_dir):
             os.makedirs(model_dir)
-        torch.save(model.state_dict(),f"{model_dir}/model_{i}.pth")
+        torch.save(model, f"./{model_dir}/model_{i}.pth")  # 保存
         print("模型已保存")
 
     writer.close()
