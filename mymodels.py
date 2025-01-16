@@ -307,7 +307,6 @@ class AttentionLayer(nn.Module):
         # 定义注意力权重
         self.attention_weights = nn.Parameter(torch.Tensor(hidden_size * 2, 1))
         nn.init.xavier_uniform_(self.attention_weights.data)
-
     def forward(self, lstm_output):
         # lstm_output: (batch, seq_len, hidden_size*2)
         # attention_weights: (hidden_size*2, 1)
@@ -323,7 +322,6 @@ class AttentionLayer(nn.Module):
         # attention_output: (batch, hidden_size*2)
         return attention_output, attention_scores
 
-
 class BiLSTMWithAttention(nn.Module):
     def __init__(self, input_size, hidden_size, output_dim = 2):
         super(BiLSTMWithAttention, self).__init__()
@@ -332,30 +330,25 @@ class BiLSTMWithAttention(nn.Module):
         self.lstm = nn.LSTM(input_size, hidden_size, num_layers=1, batch_first=True, bidirectional=True)
         # 定义注意力层
         self.attention = AttentionLayer(hidden_size)
-
+        # 定义一个线性层用于输出
+        self.fc = nn.Linear(hidden_size * 2, output_dim)
     def forward(self, x):
         # x 的形状是 (batch, seq_len, input_size)
         # 初始化隐藏状态和细胞状态
         h0 = torch.zeros(1*2, x.size(0), self.hidden_size).to(x.device)
         c0 = torch.zeros(1*2, x.size(0), self.hidden_size).to(x.device)
-
         # 前向传播LSTM
         lstm_output, _ = self.lstm(x, (h0, c0))
         # torch.Size([1, 14, 128])
-
         # 将LSTM的输出传递给注意力层
         attention_output, attention_weights = self.attention(lstm_output)
-
-        # # 将注意力层的输出传递给全连接层
-        # output = self.fc1(attention_output)
-
+        # 将注意力层的输出传递给全连接层
+        output = self.fc(attention_output)
         # return output, attention_weights
-        return attention_output
-
-
+        return output
 
 class CLSA(nn.Module):
-    def __init__(self, input_channels=1, hidden_size=64, num_classes=2):
+    def __init__(self, input_channels=1, num_classes=2):
         super(CLSA, self).__init__()
         # 使用nn.Sequential定义模型
         self.model = nn.Sequential(
@@ -383,13 +376,11 @@ class CLSA(nn.Module):
             nn.ReLU(),
             nn.MaxPool2d(kernel_size=2, stride=1, padding=1)
             # torch.Size([1, 7, 14, 14])
-
         )
 
         self.model2 = nn.Sequential(
             # LSTM
-            BiLSTMWithAttention(7*14, hidden_size),
-
+            BiLSTMWithAttention(7*14, 64),
             # # 展平层，准备输入到全连接层
             # nn.Flatten(),
             # # 全连接层，输入特征数需要根据展平后的维度计算
@@ -400,20 +391,11 @@ class CLSA(nn.Module):
             # # 二分类
             # nn.Linear(128, num_classes)
         )
-
-        self.model3 = nn.Sequential(
-            nn.Linear(hidden_size * 2, hidden_size),
-            nn.ReLU(),
-            nn.Linear(hidden_size, num_classes)
-        )
-
-
     def forward(self, x):
         x = torch.unsqueeze(x, dim=1)  # 增加conv2d所需通道维度
         x = self.model(x)
         x = x.transpose(1, 2).flatten(2)
         x = self.model2(x)
-        x = self.model3(x)
         return x
 
 
@@ -549,6 +531,8 @@ class CLSAEntropy(nn.Module):
         x = self.attn(x, e1, e2)
         x = self.model3(x)
         return x
+
+
 
 
 if __name__ == '__main__':

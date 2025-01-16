@@ -8,6 +8,7 @@ from torch.utils.data import Dataset
 from torch.utils.data import DataLoader
 from torch.utils.tensorboard import SummaryWriter
 
+from mymodel2 import *
 from mymodels import *
 
 device = torch.device("cuda:0")
@@ -73,10 +74,10 @@ class EntropyDataset(Dataset):
 
 
 if __name__ == '__main__':
-    model = CLSA().to(device)
+    model = CNN1d().to(device)
 
     # 添加 tensorboard
-    name = "CLSA"
+    name = "CNN1d"
     writer_summary_path = os.path.join('./logs', name)
     current_time = time.strftime("%Y%m%d-%H%M%S", time.localtime())
     log_dir = os.path.join(writer_summary_path, current_time)
