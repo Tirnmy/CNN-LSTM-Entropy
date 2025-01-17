@@ -1,19 +1,19 @@
 import os
 
 import numpy as np
+import pandas as pd
 import torch
 from sklearn.metrics import roc_auc_score, f1_score, precision_score, recall_score, accuracy_score
 from torch.utils.data import DataLoader, Dataset
 from train_entropy import EntropyDataset
-from mymodels import *
 
 # 参数设置
 device = torch.device("cuda:0")
 
 # 加载数据集
 test_data = EntropyDataset(data_dir='./data/test/count', label_path='./data/test/truth/test_truth.csv',
-                               e_weekend_dir='./data/test/entropy-weekend', e_workday_dir='./data/test/entropy-workday')
-test_dataloader = DataLoader(test_data, batch_size=64)
+                               e_weekend_dir='./data/test/week/entropy-weekend', e_workday_dir='./data/test/week/entropy-workday')
+test_dataloader = DataLoader(test_data, batch_size=128)
 
 # 加载模型
 # f_lst = os.listdir('./modelTimeSeriesCNN')
@@ -24,10 +24,10 @@ test_dataloader = DataLoader(test_data, batch_size=64)
 # model = model.to(device)
 # model.eval()
 
-model_dir = 'modelCLSAEntropy'
-f_lst = os.listdir(model_dir)
-for f in f_lst:
-    model = torch.load(os.path.join(model_dir, f),map_location=device)
+df = pd.DataFrame(index=range(20), columns=['AUC', 'F1-score', 'Precision', 'Recall', 'Accuracy'])
+for i in range(20):
+    model_dir = ''
+    model = torch.load(os.path.join(model_dir, f'model_{i}.pth'))
     model = model.to(device)
     model.eval()
 
@@ -68,9 +68,16 @@ for f in f_lst:
 
         # 打印指标
         print('-' * 20)
-        print(f)
+        print(f'model_{i}.pth')
         print(f"AUC: {auc:.4f}")
         print(f"F1-score: {f1:.4f}")
         print(f"Precision: {precision:.4f}")
         print(f"Recall: {recall:.4f}")
         print(f"Accuracy: {accuracy:.4f}")
+        df.loc[i, 'AUC'] = f"{auc:.4f}"
+        df.loc[i, 'F1-score'] = f"{f1:.4f}"
+        df.loc[i, 'Precision'] = f"{precision:.4f}"
+        df.loc[i, 'Recall'] = f"{recall:.4f}"
+        df.loc[i, 'Accuracy'] = f"{accuracy:.4f}"
+
+print(df)

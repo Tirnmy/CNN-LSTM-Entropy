@@ -178,6 +178,13 @@
             </Attribute>
           </value>
         </entry>
+        <entry key="\data\train\week\entropy-weekend\1.csv">
+          <value>
+            <Attribute>
+              <option name="separator" value="," />
+            </Attribute>
+          </value>
+        </entry>
       </map>
     </option>
   </component>

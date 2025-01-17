@@ -74,10 +74,10 @@ class EntropyDataset(Dataset):
 
 
 if __name__ == '__main__':
-    model = CNN1dBiLSTM().to(device)
+    model = CNN1dAttn2().to(device)
 
     # 添加 tensorboard
-    name = "CNN1dBiLSTM"
+    name = "CNN1dAttn2"
     writer_summary_path = os.path.join('./logs', name)
     current_time = time.strftime("%Y%m%d-%H%M%S", time.localtime())
     log_dir = os.path.join(writer_summary_path, current_time)

@@ -8,7 +8,7 @@ from torch.utils.data import Dataset
 from torch.utils.data import DataLoader
 from torch.utils.tensorboard import SummaryWriter
 
-from mymodels import *
+from mymodel2 import CNN1dWeekEntropy
 
 device = torch.device("cuda:0")
 
@@ -73,10 +73,10 @@ class EntropyDataset(Dataset):
 
 
 if __name__ == '__main__':
-    model = CLSAEntropy().to(device)
+    model = CNN1dWeekEntropy().to(device)
 
     # 添加 tensorboard
-    name = "CLSAEntropy"
+    name = "CNN1dWeekEntropy"
     writer_summary_path = os.path.join('./logs', name)
     current_time = time.strftime("%Y%m%d-%H%M%S", time.localtime())
     log_dir = os.path.join(writer_summary_path, current_time)
@@ -84,10 +84,16 @@ if __name__ == '__main__':
 
     # train_data = CountDataset(data_dir='./data/train/count', label_path='./data/train/truth/train_truth.csv')
     # test_data = CountDataset(data_dir='./data/test/count', label_path='./data/test/truth/test_truth.csv')
+    # train_data = EntropyDataset(data_dir='./data/train/count', label_path='./data/train/truth/train_truth.csv',
+    #                             e_weekend_dir='./data/train/entropy-weekend', e_workday_dir='./data/train/entropy-workday')
+    # test_data = EntropyDataset(data_dir='./data/test/count', label_path='./data/test/truth/test_truth.csv',
+    #                            e_weekend_dir='./data/test/entropy-weekend', e_workday_dir='./data/test/entropy-workday')
+
+    # week 数据集
     train_data = EntropyDataset(data_dir='./data/train/count', label_path='./data/train/truth/train_truth.csv',
-                                e_weekend_dir='./data/train/entropy-weekend', e_workday_dir='./data/train/entropy-workday')
+                                e_weekend_dir='./data/train/week/entropy-weekend', e_workday_dir='./data/train/week/entropy-workday')
     test_data = EntropyDataset(data_dir='./data/test/count', label_path='./data/test/truth/test_truth.csv',
-                               e_weekend_dir='./data/test/entropy-weekend', e_workday_dir='./data/test/entropy-workday')
+                               e_weekend_dir='./data/test/week/entropy-weekend', e_workday_dir='./data/test/week/entropy-workday')
 
     # length 长度
     train_data_size = len(train_data)
@@ -166,10 +172,12 @@ if __name__ == '__main__':
         writer.add_scalar("test_accuracy", total_accuracy / test_data_size, total_test_step)
         total_test_step = total_test_step + 1
 
-        model_dir = f"./model{name}"
+        model_dir = f"./model{name}/{current_time}"
         if not os.path.exists(model_dir):
             os.makedirs(model_dir)
-        torch.save(model, f"./{model_dir}/model_{i}.pth")  # 保存
+        torch.save(model, f"./{model_dir}/model_{i}.pth")  # 保存每一轮训练后的结果
+        # torch.save(model.state_dict(),f"{model_dir}/model_{i}.pth") # 保存方式二
         print("模型已保存")
+
 
     writer.close()
