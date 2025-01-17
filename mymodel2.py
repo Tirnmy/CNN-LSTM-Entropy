@@ -117,7 +117,7 @@ class CNN1dAttn(nn.Module):
 
 
 class BiLSTMModel(nn.Module):
-    def __init__(self, input_size = 16, hidden_size = 32, num_layers = 1):
+    def __init__(self, input_size = 1, hidden_size = 64, num_layers = 1):
         super(BiLSTMModel, self).__init__()
         self.hidden_size = hidden_size
         self.num_layers = num_layers
@@ -158,33 +158,35 @@ class CNN1dBiLSTM(nn.Module):
             nn.ReLU(),
             nn.Conv1d(in_channels=16, out_channels=16, kernel_size=3, stride=1, padding=1),
             nn.ReLU(),
-            nn.MaxPool1d(kernel_size=2, stride=2, padding=1)
+            nn.MaxPool1d(kernel_size=2, stride=2, padding=1),
             # torch.Size([1, 16, 10])
+            nn.Flatten()
         )
+        self.lstm = BiLSTMModel(input_size=1, hidden_size=64, num_layers=1)
         self.model2 = nn.Sequential(
-            # LSTM
-            BiLSTMModel(16, 32, 1),
-            # torch.Size([1, 64])
-            # 全连接层，输入特征数需要根据展平后的维度计算
+            # 全连接层
+            nn.Linear(128, 64),
+            nn.ReLU(),
             nn.Linear(64, 32),
             nn.ReLU(),
-            nn.Linear(32, 16),
-            nn.ReLU(),
             # 输出层，进行二分类
-            nn.Linear(16, num_classes)
+            nn.Linear(32, num_classes)
         )
 
     def forward(self, x):
-        # 直接将输入传递给定义好的Sequential模型
-        x = torch.reshape(x, (x.size(0), 7, 70))
+        x = torch.transpose(x, 1, 2)
         x = self.model(x)
-        x = x.transpose(1, 2)
+        x = x.unsqueeze(2)
+        # torch.Size([1, 160, 1])
+        # n,l,h_in
+        x = self.lstm(x)
+        # torch.Size([1, 128])
         x = self.model2(x)
         return x
 
 
 if __name__ == '__main__':
-    model = CNN1dAttn()
+    model = CNN1dBiLSTM()
     print(model)
     x = torch.randn(1, 70, 7)
     print('x1', x)
