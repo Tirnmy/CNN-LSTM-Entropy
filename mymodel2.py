@@ -117,7 +117,7 @@ class CNN1dAttn(nn.Module):
 
 
 class BiLSTMModel(nn.Module):
-    def __init__(self, input_size = 1, hidden_size = 64, num_layers = 1):
+    def __init__(self, input_size = 16, hidden_size = 32, num_layers = 1):
         super(BiLSTMModel, self).__init__()
         self.hidden_size = hidden_size
         self.num_layers = num_layers
@@ -133,8 +133,8 @@ class BiLSTMModel(nn.Module):
         # 前向传播LSTM
         out, _ = self.lstm(x, (h0, c0))  # out: tensor of shape (batch_size, seq_length, hidden_size)
 
-        # 最后一个时间步的输出
-        out = out[:, -1, :]
+        # # 最后一个时间步的输出
+        # out = out[:, -1, :]
         return out
 
 
@@ -160,27 +160,29 @@ class CNN1dBiLSTM(nn.Module):
             nn.ReLU(),
             nn.MaxPool1d(kernel_size=2, stride=2, padding=1),
             # torch.Size([1, 16, 10])
-            nn.Flatten()
         )
-        self.lstm = BiLSTMModel(input_size=1, hidden_size=64, num_layers=1)
+        self.lstm = BiLSTMModel(input_size=16, hidden_size=32, num_layers=1)
         self.model2 = nn.Sequential(
+            nn.Flatten(),
             # 全连接层
+            nn.Linear(640, 128),
+            nn.ReLU(),
             nn.Linear(128, 64),
             nn.ReLU(),
-            nn.Linear(64, 32),
-            nn.ReLU(),
             # 输出层，进行二分类
-            nn.Linear(32, num_classes)
+            nn.Linear(64, num_classes)
         )
 
     def forward(self, x):
         x = torch.transpose(x, 1, 2)
+        # torch.Size([1, 7, 70])
         x = self.model(x)
-        x = x.unsqueeze(2)
-        # torch.Size([1, 160, 1])
+        # torch.Size([1, 16, 10])
+        x = torch.transpose(x, 1, 2)
+        # torch.Size([1, 10, 16])
         # n,l,h_in
         x = self.lstm(x)
-        # torch.Size([1, 128])
+        # torch.Size([1, 10, 64])
         x = self.model2(x)
         return x
 
