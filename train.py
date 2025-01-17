@@ -162,7 +162,7 @@ if __name__ == '__main__':
         model_dir = f"./model{name}"
         if not os.path.exists(model_dir):
             os.makedirs(model_dir)
-        torch.save(model, f"./{model_dir}/model_{i}.pth")  # 保存每一轮训练后的结果
+        torch.save(model, f"./{model_dir}/{current_time}/model_{i}.pth")  # 保存每一轮训练后的结果
         # torch.save(model.state_dict(),f"{model_dir}/model_{i}.pth") # 保存方式二
         print("模型已保存")
 
