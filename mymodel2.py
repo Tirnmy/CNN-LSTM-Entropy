@@ -70,7 +70,7 @@ class CNN1dAttn(nn.Module):
     """
     def __init__(self, input_channels=7, num_classes=2):
         super(CNN1dAttn, self).__init__()
-
+        self.se_block = SEblock(ch_in=7)
         # 使用nn.Sequential定义模型
         self.model1 = nn.Sequential(
             # 第一层卷积，in_channels=7（特征数），out_channels=16（输出通道数）
@@ -78,10 +78,7 @@ class CNN1dAttn(nn.Module):
             nn.ReLU(),
             nn.Conv1d(in_channels=16, out_channels=16, kernel_size=3, stride=1, padding=1),
             nn.ReLU(),
-            nn.MaxPool1d(kernel_size=2, stride=2, padding=1)
-        )
-        self.se_block = SEblock(ch_in=7)
-        self.model2 = nn.Sequential(
+            nn.MaxPool1d(kernel_size=2, stride=2, padding=1),
             nn.Conv1d(in_channels=16, out_channels=16, kernel_size=3, stride=1, padding=1),
             nn.ReLU(),
             nn.Conv1d(in_channels=16, out_channels=16, kernel_size=3, stride=1, padding=1),
@@ -94,7 +91,7 @@ class CNN1dAttn(nn.Module):
             nn.MaxPool1d(kernel_size=2, stride=2, padding=1)
             # torch.Size([1, 16, 10])
         )
-        self.model3 = nn.Sequential(
+        self.model2 = nn.Sequential(
             # 展平层，准备输入到全连接层
             nn.Flatten(),
             # 全连接层，输入特征数需要根据展平后的维度计算
@@ -108,15 +105,14 @@ class CNN1dAttn(nn.Module):
 
     def forward(self, x):
         x = torch.transpose(x, 1, 2)
-        print('x2', x)
-        print(x.shape)
-
-        # x = torch.unsqueeze(x, 2)
-        # x = self.se_block(x)
+        x = torch.unsqueeze(x, 2)
         # torch.Size([1, 7, 1, 70])
-        # x = torch.reshape(x, (x.size(0), 7, 70))
-        # x = self.model1(x)
-        # x = self.model2(x)
+        x = self.se_block(x)
+        # torch.Size([1, 7, 1, 70])
+        x = torch.squeeze(x, 2)
+        x = self.model1(x)
+        # torch.Size([1, 16, 10])
+        x = self.model2(x)
         return x
 
 
@@ -189,6 +185,7 @@ class CNN1dBiLSTM(nn.Module):
 
 if __name__ == '__main__':
     model = CNN1dAttn()
+    print(model)
     x = torch.randn(1, 70, 7)
     print('x1', x)
     print(x.shape)

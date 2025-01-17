@@ -74,10 +74,10 @@ class EntropyDataset(Dataset):
 
 
 if __name__ == '__main__':
-    model = CNN1d().to(device)
+    model = CNN1dAttn().to(device)
 
     # 添加 tensorboard
-    name = "CNN1d"
+    name = "CNN1dAttn"
     writer_summary_path = os.path.join('./logs', name)
     current_time = time.strftime("%Y%m%d-%H%M%S", time.localtime())
     log_dir = os.path.join(writer_summary_path, current_time)
@@ -159,10 +159,10 @@ if __name__ == '__main__':
         writer.add_scalar("test_accuracy", total_accuracy / test_data_size, total_test_step)
         total_test_step = total_test_step + 1
 
-        model_dir = f"./model{name}"
+        model_dir = f"./model{name}/{current_time}"
         if not os.path.exists(model_dir):
             os.makedirs(model_dir)
-        torch.save(model, f"./{model_dir}/{current_time}/model_{i}.pth")  # 保存每一轮训练后的结果
+        torch.save(model, f"./{model_dir}/model_{i}.pth")  # 保存每一轮训练后的结果
         # torch.save(model.state_dict(),f"{model_dir}/model_{i}.pth") # 保存方式二
         print("模型已保存")
 
