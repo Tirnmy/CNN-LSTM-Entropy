@@ -24,9 +24,9 @@ test_dataloader = DataLoader(test_data, batch_size=128)
 # model = model.to(device)
 # model.eval()
 
-df = pd.DataFrame(index=range(20), columns=['AUC', 'F1-score', 'Precision', 'Recall', 'Accuracy'])
-for i in range(20):
-    model_dir = ''
+df = pd.DataFrame(columns=['AUC', 'F1-score', 'Precision', 'Recall', 'Accuracy'])
+for i in range(5, 21):
+    model_dir = './modelCNN1dWeekEntropy/20250118-050416'
     model = torch.load(os.path.join(model_dir, f'model_{i}.pth'))
     model = model.to(device)
     model.eval()
